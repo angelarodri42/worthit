@@ -191,7 +191,7 @@ export function PriceTracker() {
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-10 pt-8">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          Cart Compass
+          Worth It
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Find the true price per {refLabel}

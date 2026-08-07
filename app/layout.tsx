@@ -10,7 +10,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Cart Compass — Grocery Price Tracker',
+  title: 'Worth It',
   description:
     'Track grocery prices, calculate price per 100g, and instantly see whether a product is cheap, average, or expensive.',
   generator: 'v0.app',
