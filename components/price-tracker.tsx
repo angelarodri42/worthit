@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Search, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
@@ -110,10 +110,25 @@ export function PriceTracker() {
   const [price, setPrice] = useState("")
   const [amount, setAmount] = useState("")
   const [unit, setUnit] = useState<Unit>("g")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const suggestionsRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     
     loadEntries().then(setEntries)
+  }, [])
+
+  // Hide suggestions when clicking outside the search container
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const el = suggestionsRef.current
+      if (!el) return
+      if (el.contains(e.target as Node)) return
+      setShowSuggestions(false)
+    }
+
+    document.addEventListener("click", onDocClick)
+    return () => document.removeEventListener("click", onDocClick)
   }, [])
 
 
@@ -146,6 +161,11 @@ export function PriceTracker() {
     })
     .slice(0, 5)
 }, [entries, product])
+
+  // Show suggestions when there's a query and matches
+  useEffect(() => {
+    setShowSuggestions(product.trim().length > 0 && suggestions.length > 0)
+  }, [product, suggestions.length])
 
   const priceNum = Number.parseFloat(price)
   const amountNum = Number.parseFloat(amount)
@@ -246,8 +266,8 @@ export function PriceTracker() {
         </p>
       </header>
 
-      {/* Search */}
-      <div className="relative">
+        {/* Search */}
+        <div ref={suggestionsRef} className="relative">
   <Search
     className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
     aria-hidden="true"
@@ -258,12 +278,13 @@ export function PriceTracker() {
     inputMode="text"
     value={product}
     onChange={(e) => setProduct(e.target.value)}
+    onFocus={() => setShowSuggestions(true)}
     placeholder="Search a product…"
     aria-label="Product name"
     className="h-14 w-full rounded-2xl border border-border bg-card pl-12 pr-4 text-base text-card-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
   />
 
-  {suggestions.length > 0 && (
+  {showSuggestions && suggestions.length > 0 && (
     <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
       <div className="px-4 py-2 text-xs font-medium text-muted-foreground">
         Did you mean?
