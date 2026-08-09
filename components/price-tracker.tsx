@@ -83,6 +83,27 @@ function computeUnitPrice(price: number, amount: number, unit: Unit) {
   return kind === "count" ? price / base : (price / base) * 100
 }
 
+function wordsMatch(query: string, productName: string) {
+  const queryWords = query
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  const productWords = productName
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (queryWords.length === 0) return false
+
+  // Every word typed must appear somewhere in the saved product name.
+  return queryWords.every((queryWord) =>
+    productWords.some((productWord) => productWord.includes(queryWord))
+  )
+}
+
 export function PriceTracker() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [product, setProduct] = useState("")
@@ -98,6 +119,33 @@ export function PriceTracker() {
 
   const kind = UNIT_META[unit].kind
   const refLabel = REF_LABEL[kind]
+
+  const suggestions = useMemo(() => {
+  const query = product.trim()
+
+  if (!query) return []
+
+  const uniqueProducts = new Map<string, Entry>()
+
+  for (const entry of entries) {
+    const key = entry.product.toLowerCase()
+
+    if (!uniqueProducts.has(key)) {
+      uniqueProducts.set(key, entry)
+    }
+  }
+
+  return Array.from(uniqueProducts.values())
+    .filter((entry) => wordsMatch(query, entry.product))
+    .filter((entry) => entry.product.toLowerCase() !== query.toLowerCase())
+    .sort((a, b) => {
+      const aWords = a.product.toLowerCase().split(/\s+/)
+      const bWords = b.product.toLowerCase().split(/\s+/)
+
+      return aWords.length - bWords.length
+    })
+    .slice(0, 5)
+}, [entries, product])
 
   const priceNum = Number.parseFloat(price)
   const amountNum = Number.parseFloat(amount)
@@ -200,20 +248,55 @@ export function PriceTracker() {
 
       {/* Search */}
       <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <input
-          type="text"
-          inputMode="text"
-          value={product}
-          onChange={(e) => setProduct(e.target.value)}
-          placeholder="Search a product…"
-          aria-label="Product name"
-          className="h-14 w-full rounded-2xl border border-border bg-card pl-12 pr-4 text-base text-card-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
-        />
+  <Search
+    className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+    aria-hidden="true"
+  />
+
+  <input
+    type="text"
+    inputMode="text"
+    value={product}
+    onChange={(e) => setProduct(e.target.value)}
+    placeholder="Search a product…"
+    aria-label="Product name"
+    className="h-14 w-full rounded-2xl border border-border bg-card pl-12 pr-4 text-base text-card-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
+  />
+
+  {suggestions.length > 0 && (
+    <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      <div className="px-4 py-2 text-xs font-medium text-muted-foreground">
+        Did you mean?
       </div>
+
+      {suggestions.map((suggestion) => {
+        const productCount = entries.filter(
+          (entry) =>
+            entry.product.toLowerCase() ===
+            suggestion.product.toLowerCase()
+        ).length
+
+        return (
+          <button
+            key={suggestion.product}
+            type="button"
+            onClick={() => setProduct(suggestion.product)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary"
+          >
+            <span className="font-medium text-card-foreground">
+              {suggestion.product}
+            </span>
+
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {productCount}{" "}
+              {productCount === 1 ? "price" : "prices"}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )}
+</div>
 
       {/* Inputs */}
       <form onSubmit={handleSave} className="mt-4">
