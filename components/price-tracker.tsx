@@ -37,6 +37,7 @@ type Entry = {
   unitPrice: number
   kind: Kind
   date: number
+  store: string
 }
 
 type Verdict = "cheap" | "average" | "expensive"
@@ -62,6 +63,7 @@ async function loadEntries(): Promise<Entry[]> {
     unitPrice: item.unit_price,
     kind: item.kind,
     date: new Date(item.date).getTime(),
+    store: item.store ?? "",
   }))
 }
 
@@ -110,6 +112,7 @@ export function PriceTracker() {
   const [price, setPrice] = useState("")
   const [amount, setAmount] = useState("")
   const [unit, setUnit] = useState<Unit>("g")
+  const [store, setStore] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const suggestionsRef = useRef<HTMLDivElement | null>(null)
 
@@ -225,6 +228,7 @@ export function PriceTracker() {
     unitPrice,
     kind,
     date: Date.now(),
+    store: store.trim(),
   }
 
   const { error } = await supabase
@@ -238,6 +242,7 @@ export function PriceTracker() {
     unit_price: entry.unitPrice,
     kind: entry.kind,
     date: new Date(entry.date).toISOString(),
+    store: entry.store || null,
   })
 
   if (error) {
@@ -249,6 +254,7 @@ export function PriceTracker() {
 
   setPrice("")
   setAmount("")
+  setStore("")
 }
 
   function removeEntry(id: string) {
@@ -385,6 +391,22 @@ export function PriceTracker() {
           </div>
         </fieldset>
 
+        {/* Store */}
+        <label className="mt-3 flex flex-col gap-1.5">
+          <span className="pl-1 text-xs font-medium text-muted-foreground">
+            Store (optional)
+          </span>
+          <input
+            type="text"
+            inputMode="text"
+            value={store}
+            onChange={(e) => setStore(e.target.value)}
+            placeholder="e.g. Netto, Rema 1000…"
+            aria-label="Store"
+            className="h-14 w-full rounded-2xl border border-border bg-card px-4 text-base text-card-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25"
+          />
+        </label>
+
         {/* Result card */}
         <ResultCard
           unitPrice={unitPrice}
@@ -428,6 +450,7 @@ export function PriceTracker() {
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {formatMoney(h.price)} · {h.amount}
                     {h.unit}
+                    {h.store && <> · {h.store}</>}
                   </span>
                 </div>
                 <button
